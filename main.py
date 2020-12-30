@@ -49,7 +49,6 @@ class MinimizerFunction:
         
         print('Доступные функции', self.ob)
 
-    # Public
     def select_row(self, n):
         ''' Собирает нужные строки из двумерного массива'''
         A = []
@@ -93,7 +92,7 @@ class MinimizerFunction:
         
         with Bar('Склеивание векторов: ', max = size_dnf-1) as bar:
             # выполнения склеивания векторов
-            for i in range(size_dnf-1):  # TODO тут перепроверить нужно
+            for i in range(size_dnf-1):
                 for j in range(i+1, size_dnf):
                     temp = self._glue(dnf[i], dnf[j])
                     if temp:
@@ -107,9 +106,9 @@ class MinimizerFunction:
         mark2 = [0] * size2
         
         with Bar('Склеивание векторов 2 : ', max = size2-1) as bar:
-            for i in range(size2-1):  # TODO тут размер нормальный?
+            for i in range(size2-1):
                 for j in range(i+1, size2):
-                    if i != j and mark2[i] == 0:  # TODO why i != j
+                    if i != j and mark2[i] == 0:
                         if list1[i] == list1[j]:
                             mark2[j] = 1
 
@@ -127,7 +126,7 @@ class MinimizerFunction:
                     list3.append(dnf[i])
                     m += 1
 
-        if m == size or size_dnf == 1:  # TODO size == 1
+        if m == size or size_dnf == 1:
             return list3
     
         return list3 + self.create_func(list2)
@@ -145,8 +144,8 @@ class MinimizerFunction:
                 print(i, 1, file=fout)
             print('.e', end='', file=fout)
         print(f'Был создан файл "dnf_{number}.plaC"')
-            
-    # Private 
+
+
     def _create_normal_data(self, A):
         '''формирует данные в читабельный список'''
         Names = self.ilb
