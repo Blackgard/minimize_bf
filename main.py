@@ -90,7 +90,7 @@ class MinimizerFunction:
         mark  = np.zeros(size_dnf)
         m     = 0
         
-        with Bar('Склеивание векторов: ', max = size_dnf-1) as bar:
+        with Bar('Склеивание векторов: ', max = size_dnf + 1) as bar:
             # выполнения склеивания векторов
             for i in range(size_dnf-1):
                 for j in range(i+1, size_dnf):
@@ -105,7 +105,7 @@ class MinimizerFunction:
         size2 = list1.size
         mark2 = np.zeros(size2)
         
-        with Bar('Склеивание векторов 2 : ', max = size2-1) as bar:
+        with Bar('Склеивание векторов 2 : ', max = size2 + 1) as bar:
             for i in range(size2-1):
                 for j in range(i+1, size2):
                     if i != j and mark2[i] == 0:
@@ -115,14 +115,14 @@ class MinimizerFunction:
 
 
         # добавляем разные элементы для нового списка
-        with Bar('Добавление элементов: ', max = size2-1) as bar:
+        with Bar('Добавление элементов: ', max = size2 + 1) as bar:
             for i in range(size2):
                 if mark2[i] == 0:
                     list2 = np.append(list2, list1[i])
                 bar.next()
 
         # выбираем не учавствующие элементы
-        with Bar('Добавление элементов: ', max = size_dnf) as bar:
+        with Bar('Добавление элементов: ', max = size_dnf + 1) as bar:
             for i in range(size_dnf):
                 if mark[i] == 0:
                     list3 = np.append(list3, dnf[i])
@@ -135,10 +135,12 @@ class MinimizerFunction:
     
         return np.concatenate((list3, self.create_func(list2)))
 
-    def save_file(self, data, number):
+    def save_file(self, data, number, filePath):
         '''сохраняет результат в файл pla'''
         namesFun = self._create_normal_data(data)
-        with open(f'dnf_{number}.plaC','w') as fout:
+        fileName = filePath.split('/')[-1].split('.')[0]
+        
+        with open(f'{fileName}_{number}.plaC','w') as fout:
             print('.i', str(self.countInput), file=fout)
             print('.o', str(1), file=fout)
             print('.ilb', *self.ilb, file=fout)
@@ -147,7 +149,7 @@ class MinimizerFunction:
             for i in data:
                 print(i, 1, file=fout)
             print('.e', end='', file=fout)
-        print(f'Был создан файл "dnf_{number}.plaC"')
+        print(f'Был создан файл "{fileName}_{number}.plaC"')
 
 
     def _create_normal_data(self, A):
@@ -179,8 +181,11 @@ class MinimizerFunction:
         return newVector
 
 class ReaderFile:
+    RAND = 'RAND'
+    FILE = 'FILE'
+    
     """ Reader data from file"""
-    def __init__(self, flag='r', **kwargs):
+    def __init__(self, flag, **kwargs):
         """
         flag: 'r' (random) or 'nf' (file name)
         kwargs: fileName
@@ -189,11 +194,11 @@ class ReaderFile:
         self.fileName = kwargs['fileName']
         self.data = ()
         
-        if self.flag == 'r':
+        if self.flag == self.RAND:
             pathFile = self.get_random_file()
             self.fileName = pathFile
             self.read_file(pathFile)
-        elif self.flag == 'nf':
+        elif self.flag == self.FILE:
             self.read_file(self.fileName if self.fileName else None)
         else:
             logger.error('Flag is not correct!')
@@ -245,7 +250,7 @@ class ReaderFile:
         return os.path.join(plaForlder, random.choice(os.listdir(plaForlder)))
 
 if __name__ == '__main__':
-    reader: ReaderFile = ReaderFile('r', fileName = 'pla/rd53.pla')
+    reader: ReaderFile = ReaderFile(ReaderFile.FILE, fileName = 'pla/9.pla')
     pla_data: tuple = reader.get_data()
 
     f = MinimizerFunction(*pla_data)
@@ -257,4 +262,4 @@ if __name__ == '__main__':
     dnf = f.add_vectors(fd_row)
     minim_func = f.create_func(dnf)
     
-    f.save_file(minim_func, number)
+    f.save_file(minim_func, number, reader.get_file_name())
