@@ -22,7 +22,8 @@
 import os
 import fnmatch
 import logging
-import random 
+import random
+import numpy as np 
 
 from progress.bar import Bar
 
@@ -43,51 +44,50 @@ class MinimizerFunction:
         self.rows = rows
         self.vectors = vectors
         
-        self.A = []
-        self.B = []
-        self.C = []
+        self.A = np.array([], dtype=object)
+        self.B = np.array([], dtype=object)
+        self.C = np.array([], dtype=object)
         
         print('Доступные функции', self.ob)
 
     def select_row(self, n):
         ''' Собирает нужные строки из двумерного массива'''
-        A = []
         with Bar('Выбор строк: ', max = len(self.vectors)) as bar:
             for i in self.vectors:
                 if i[1][n] == '1':
-                    A.append(i[0])
+                    self.A = np.append(self.A, [i[0]])
                 bar.next()
-        self.A = A
-        return A
+        return self.A
 
     def add_vectors(self, A):
         '''Заменяет - на 0 и 1 тем самым увеличивает набор данных'''
-        B = []
+        pre_vect = np.copy(self.A)
         with Bar('Добавляем вектора: ', max = len(A)) as bar:
-            while A:
-                temp = A.pop(0)
+            while pre_vect.size:
+                temp = pre_vect[-1]
+                pre_vect = pre_vect[:-1]
+                
                 if '-' in temp:
                     n = temp.find('-')
                     first = temp[:n] + '0' + temp[n + 1:]
                     second = temp[:n] + '1' + temp[n + 1:]
                     if '-' in first:
-                        A.append(first)
-                        A.append(second)
+                        pre_vect = np.append(pre_vect, first)
+                        pre_vect = np.append(pre_vect, second)
                     else:
-                        B.append(first)
-                        B.append(second)
+                        self.B = np.append(self.B, first)
+                        self.B = np.append(self.B, second)
                 else:
-                    B.append(temp)
+                    self.B = np.append(self.B, temp)
                 bar.next()
-        self.B = B
-        return B
+        return self.B
 
     def create_func(self, dnf):
         size_dnf  = len(dnf)
-        list1 = []
-        list2 = []
-        list3 = []
-        mark  = [0]*size_dnf
+        list1 = np.array([], dtype=object)
+        list2 = np.array([], dtype=object)
+        list3 = np.array([], dtype=object)
+        mark  = np.zeros(size_dnf)
         m     = 0
         
         with Bar('Склеивание векторов: ', max = size_dnf-1) as bar:
@@ -96,14 +96,14 @@ class MinimizerFunction:
                 for j in range(i+1, size_dnf):
                     temp = self._glue(dnf[i], dnf[j])
                     if temp:
-                        list1.append(temp)
+                        list1 = np.append(list1, temp)
                         mark[i] = 1
                         mark[j] = 1
                 bar.next()
                     
         # делаем метку
-        size2 = len(list1)
-        mark2 = [0] * size2
+        size2 = list1.size
+        mark2 = np.zeros(size2)
         
         with Bar('Склеивание векторов 2 : ', max = size2-1) as bar:
             for i in range(size2-1):
@@ -111,25 +111,29 @@ class MinimizerFunction:
                     if i != j and mark2[i] == 0:
                         if list1[i] == list1[j]:
                             mark2[j] = 1
+                bar.next()
 
 
         # добавляем разные элементы для нового списка
         with Bar('Добавление элементов: ', max = size2-1) as bar:
             for i in range(size2):
                 if mark2[i] == 0:
-                    list2.append(list1[i])
+                    list2 = np.append(list2, list1[i])
+                bar.next()
 
         # выбираем не учавствующие элементы
         with Bar('Добавление элементов: ', max = size_dnf) as bar:
-            for i in range(size):
+            for i in range(size_dnf):
                 if mark[i] == 0:
-                    list3.append(dnf[i])
+                    list3 = np.append(list3, dnf[i])
                     m += 1
+                bar.next()
 
-        if m == size or size_dnf == 1:
+        if m == size_dnf or size_dnf == 1:
+            print("я вышел")
             return list3
     
-        return list3 + self.create_func(list2)
+        return np.concatenate((list3, self.create_func(list2)))
 
     def save_file(self, data, number):
         '''сохраняет результат в файл pla'''
@@ -187,6 +191,7 @@ class ReaderFile:
         
         if self.flag == 'r':
             pathFile = self.get_random_file()
+            self.fileName = pathFile
             self.read_file(pathFile)
         elif self.flag == 'nf':
             self.read_file(self.fileName if self.fileName else None)
@@ -214,6 +219,9 @@ class ReaderFile:
     def get_data(self) -> tuple:
         """ Return all data from readed file """
         return self.data
+    
+    def get_file_name(self) -> str:
+        return self.fileName
         
     def read_file(self, pathFile: str) -> tuple:
         ''' Read file and return turple data'''
@@ -237,11 +245,12 @@ class ReaderFile:
         return os.path.join(plaForlder, random.choice(os.listdir(plaForlder)))
 
 if __name__ == '__main__':
-    reader: ReaderFile = ReaderFile('r', fileName = '')
+    reader: ReaderFile = ReaderFile('r', fileName = 'pla/rd53.pla')
     pla_data: tuple = reader.get_data()
 
     f = MinimizerFunction(*pla_data)
 
+    print("Read file -> " + reader.get_file_name())
     number = int(input(MES['INPUT']))
     
     fd_row = f.select_row(number)
